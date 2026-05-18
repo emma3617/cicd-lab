@@ -23,6 +23,7 @@ describe('Fastify app', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().message).toBe('CI/CD Lab Fastify app is running');
+    expect(response.json()).toHaveProperty('version');
     await app.close();
   });
 });
