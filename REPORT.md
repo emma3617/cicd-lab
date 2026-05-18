@@ -9,13 +9,13 @@
 
 ## 二、評分對應一覽
 
-| 評分項目                | 比重 | 對應實作                                                                            |
-| ----------------------- | ---- | ----------------------------------------------------------------------------------- |
-| 自動觸發 (push)         | 20%  | `on: push` + `on: pull_request`，任何分支 push 皆會觸發                             |
-| 核心檢查 (typecheck / prettier / test) | 20% | 三個獨立 step：`npm run typecheck`、`npm run format:check`、`npm test` |
-| 錯誤阻斷機制            | 20%  | 每個 step 用非零 exit code 自動讓 Job 失敗；不額外吞錯誤                            |
-| 測試結果呈現            | 20%  | (a) Vitest JUnit XML → `dorny/test-reporter@v2` 顯示成 Check；(b) Upload artifact；(c) `$GITHUB_STEP_SUMMARY` 統計摘要 |
-| 實作報告                | 20%  | 本文件                                                                              |
+| 評分項目                               | 比重 | 對應實作                                                                                                               |
+| -------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------- |
+| 自動觸發 (push)                        | 20%  | `on: push` + `on: pull_request`，任何分支 push 皆會觸發                                                                |
+| 核心檢查 (typecheck / prettier / test) | 20%  | 三個獨立 step：`npm run typecheck`、`npm run format:check`、`npm test`                                                 |
+| 錯誤阻斷機制                           | 20%  | 每個 step 用非零 exit code 自動讓 Job 失敗；不額外吞錯誤                                                               |
+| 測試結果呈現                           | 20%  | (a) Vitest JUnit XML → `dorny/test-reporter@v2` 顯示成 Check；(b) Upload artifact；(c) `$GITHUB_STEP_SUMMARY` 統計摘要 |
+| 實作報告                               | 20%  | 本文件                                                                                                                 |
 
 ---
 
@@ -46,11 +46,11 @@ concurrency:
 
 在「Install dependencies (`npm ci`)」之後依序執行：
 
-| Step                          | 指令                  | 來源                                    |
-| ----------------------------- | --------------------- | --------------------------------------- |
-| TypeScript typecheck          | `npm run typecheck`   | `package.json` → `tsc --noEmit`         |
-| Prettier check                | `npm run format:check`| `package.json` → `prettier --check .`   |
-| Run tests (with JUnit output) | `npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml` | Vitest 內建多 reporter |
+| Step                          | 指令                                                                                          | 來源                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------- |
+| TypeScript typecheck          | `npm run typecheck`                                                                           | `package.json` → `tsc --noEmit`       |
+| Prettier check                | `npm run format:check`                                                                        | `package.json` → `prettier --check .` |
+| Run tests (with JUnit output) | `npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml` | Vitest 內建多 reporter                |
 
 為了讓使用者在**一次 run 中看到所有失敗**，prettier、test 等後續 step 使用 `if: ${{ !cancelled() }}`，意思是「只要工作流程沒被取消就繼續跑」。這樣即使 typecheck 失敗，後續 prettier check 與 test 仍會執行，但 Job 整體最終仍會因為 typecheck 的非零 exit code 而被標記為 **failed**。
 
@@ -148,14 +148,14 @@ act push -W .github/workflows/ci_r14228008.yaml
 
 ### 工具清單
 
-| 工具                            | 用途                                                |
-| ------------------------------- | --------------------------------------------------- |
-| `actions/checkout@v4`           | Checkout 程式碼                                     |
-| `actions/setup-node@v4`         | 安裝 Node 22 並啟用 npm cache                       |
-| Vitest 4 內建 `--reporter=junit`| 產出 JUnit XML 測試報告                             |
-| `dorny/test-reporter@v2`        | 把 JUnit XML 轉成 GitHub Check，於 Actions 頁面顯示 |
-| `actions/upload-artifact@v4`    | 上傳測試報告原檔做為 artifact                       |
-| `$GITHUB_STEP_SUMMARY`          | 在 run 摘要區直接顯示 Markdown 統計                 |
+| 工具                             | 用途                                                |
+| -------------------------------- | --------------------------------------------------- |
+| `actions/checkout@v4`            | Checkout 程式碼                                     |
+| `actions/setup-node@v4`          | 安裝 Node 22 並啟用 npm cache                       |
+| Vitest 4 內建 `--reporter=junit` | 產出 JUnit XML 測試報告                             |
+| `dorny/test-reporter@v2`         | 把 JUnit XML 轉成 GitHub Check，於 Actions 頁面顯示 |
+| `actions/upload-artifact@v4`     | 上傳測試報告原檔做為 artifact                       |
+| `$GITHUB_STEP_SUMMARY`           | 在 run 摘要區直接顯示 Markdown 統計                 |
 
 ### 設計策略
 
