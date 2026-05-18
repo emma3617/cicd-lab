@@ -1,0 +1,89 @@
+name: CI - Quality Checks (Assignment)
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+concurrency:
+  group: ci-assignment-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: TypeScript / Prettier / Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Prettier check
+        if: ${{ !cancelled() }}
+        run: npm run format:check
+
+      - name: Run tests (with JUnit output)
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p reports
+          npm test -- \
+            --reporter=default \
+            --reporter=junit \
+            --outputFile.junit=reports/vitest-junit.xml
+
+      - name: Publish test results to Actions UI
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v2
+        with:
+          name: Vitest Report
+          path: reports/vitest-junit.xml
+          reporter: jest-junit
+          fail-on-error: false
+
+      - name: Upload JUnit report artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-junit-report
+          path: reports/
+          if-no-files-found: warn
+
+      - name: Append summary to GitHub Step Summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "## Vitest Test Results"
+            echo ""
+            if [ -f reports/vitest-junit.xml ]; then
+              TESTS=$(grep -oE 'tests="[0-9]+"' reports/vitest-junit.xml | head -1 | grep -oE '[0-9]+')
+              FAILURES=$(grep -oE 'failures="[0-9]+"' reports/vitest-junit.xml | head -1 | grep -oE '[0-9]+')
+              ERRORS=$(grep -oE 'errors="[0-9]+"' reports/vitest-junit.xml | head -1 | grep -oE '[0-9]+')
+              SKIPPED=$(grep -oE 'skipped="[0-9]+"' reports/vitest-junit.xml | head -1 | grep -oE '[0-9]+')
+              echo "| Metric | Count |"
+              echo "| --- | --- |"
+              echo "| Total tests | ${TESTS:-0} |"
+              echo "| Failures    | ${FAILURES:-0} |"
+              echo "| Errors      | ${ERRORS:-0} |"
+              echo "| Skipped     | ${SKIPPED:-0} |"
+              echo ""
+              echo "Full JUnit XML report is uploaded as the \`vitest-junit-report\` artifact and rendered by the \`Vitest Report\` check."
+            else
+              echo "_No JUnit report file found (tests may have failed before producing output)._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
